@@ -183,7 +183,7 @@ export default function ImageProcessor() {
     setErrorMsg('');
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     if (!resultImageUrl) return;
     
     try {
@@ -196,11 +196,33 @@ export default function ImageProcessor() {
         ia[i] = byteString.charCodeAt(i);
       }
       const blob = new Blob([ab], { type: mimeString });
+      const filename = `product-${Date.now()}.jpg`;
+
+      // 1. محاولة استخدام Web Share API (ممتاز لتطبيقات الـ PWA والهواتف)
+      if (navigator.canShare) {
+        const file = new File([blob], filename, { type: mimeString });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'صورة المنتج',
+            });
+            return; // تمت العملية بنجاح عبر المشاركة
+          } catch (shareErr: any) {
+            // المستخدم ألغى المشاركة أو حدث خطأ
+            if (shareErr.name !== 'AbortError') {
+              console.log('Share API error:', shareErr);
+            }
+          }
+        }
+      }
+
+      // 2. الطريقة التقليدية (للكمبيوتر أو إذا فشلت المشاركة)
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
-      a.download = `product-${Date.now()}.jpg`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       
@@ -210,6 +232,7 @@ export default function ImageProcessor() {
       }, 100);
     } catch (err) {
       console.error('Failed to download image:', err);
+      alert('حدث خطأ أثناء حفظ الصورة. يرجى المحاولة مرة أخرى.');
     }
   };
 
