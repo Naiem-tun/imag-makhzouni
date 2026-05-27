@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react';
-import { Upload, Download, RefreshCw, Image as ImageIcon, Loader2, Lock, Sparkles } from 'lucide-react';
+import { Upload, Download, RefreshCw, Image as ImageIcon, Loader2, Lock } from 'lucide-react';
 import { removeBackground } from '@imgly/background-removal';
 
 type ProcessingStatus = 'idle' | 'processing' | 'done' | 'error';
@@ -9,7 +9,6 @@ export default function ImageProcessor() {
   const [progressMsg, setProgressMsg] = useState<string>('');
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +43,6 @@ export default function ImageProcessor() {
       return;
     }
 
-    setOriginalFile(file);
     setStatus('processing');
     setProgressMsg('جارٍ تجهيز الأداة...');
     setProgressPercent(0);
@@ -198,43 +196,7 @@ export default function ImageProcessor() {
     setProgressMsg('');
     setProgressPercent(0);
     setResultImageUrl(null);
-    setOriginalFile(null);
     setErrorMsg('');
-  };
-
-  const processWithStudioHD = async () => {
-    if (!originalFile) return;
-
-    setStatus('processing');
-    setProgressMsg('جاري الاتصال بمعالجات الذكاء الاصطناعي السحابية...');
-    setProgressPercent(10);
-    setErrorMsg('');
-
-    try {
-      const formData = new FormData();
-      formData.append('image', originalFile);
-
-      const response = await fetch('/api/photoroom/studio', {
-        method: 'POST',
-        body: formData,
-      });
-
-      setProgressPercent(80);
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'حدث خطأ غير معروف');
-      }
-
-      setResultImageUrl(data.imageBase64);
-      setStatus('done');
-      setProgressMsg('');
-      setProgressPercent(100);
-    } catch (error: any) {
-      console.error('Studio HD error:', error);
-      setStatus('error');
-      setErrorMsg(error.message || 'فشل الاتصال بالمعالج بالذكاء الاصطناعي. تأكد من وجود مفتاح API صالح.');
-    }
   };
 
   const downloadImage = async () => {
@@ -362,22 +324,14 @@ export default function ImageProcessor() {
           )}
           
           {status === 'done' && resultImageUrl && (
-               <div className="flex-1 flex flex-col gap-4">
-                  <div className="flex-1 bg-white rounded-3xl border border-slate-200 flex items-center justify-center p-2 relative overflow-hidden shrink-0 min-h-[250px] shadow-inner">
+               <div className="flex-1 flex flex-col">
+                  <div className="flex-1 bg-white rounded-3xl border border-slate-200 flex items-center justify-center p-2 relative overflow-hidden shrink-0 min-h-[250px]">
                       <img 
                         src={resultImageUrl} 
                         alt="Product Ready" 
                         className="w-full h-full object-contain rounded-2xl"
                       />
                   </div>
-                  
-                  <button 
-                    onClick={processWithStudioHD}
-                    className="flex shrink-0 items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-2xl font-bold shadow-lg transition-transform active:scale-95"
-                  >
-                    <Sparkles className="w-5 h-5 text-fuchsia-200" />
-                    <span>تحسين احترافي بالذكاء الاصطناعي (Studio HD)</span>
-                  </button>
                </div>
           )}
           
