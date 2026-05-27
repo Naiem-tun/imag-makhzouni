@@ -253,10 +253,10 @@ export default function ImageProcessor() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-200 flex items-center justify-center font-sans p-4" dir="rtl">
-      <div className="w-[360px] h-[640px] bg-slate-50 rounded-[3rem] shadow-2xl border-[8px] border-slate-800 overflow-hidden relative flex flex-col shrink-0">
+    <div className="w-full min-h-[100dvh] bg-slate-50 sm:bg-slate-200 flex items-center justify-center font-sans sm:p-4" dir="rtl">
+      <div className="w-full sm:w-[360px] h-[100dvh] sm:h-[640px] bg-slate-50 sm:rounded-[3rem] sm:shadow-2xl sm:border-[8px] sm:border-slate-800 overflow-hidden relative flex flex-col shrink-0">
         
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-b-2xl z-20"></div>
+        <div className="hidden sm:block absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-b-2xl z-20"></div>
 
         <header className="pt-10 pb-4 px-6 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
