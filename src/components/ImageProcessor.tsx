@@ -124,9 +124,9 @@ export default function ImageProcessor() {
           const productWidth = maxX - minX;
           const productHeight = maxY - minY;
 
-          // 2. Prepare final 1080x1080 canvas
+          // 2. Prepare final 800x800 canvas
           const canvas = document.createElement('canvas');
-          const CANVAS_SIZE = 1080;
+          const CANVAS_SIZE = 800;
           canvas.width = CANVAS_SIZE;
           canvas.height = CANVAS_SIZE;
           const ctx = canvas.getContext('2d');
@@ -141,8 +141,8 @@ export default function ImageProcessor() {
           ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
           // Calculate dimensions and position
-          const PADDING_PERCENT = 0.10;
-          const padding = CANVAS_SIZE * PADDING_PERCENT; // 108px
+          const PADDING_PERCENT = 0.12;
+          const padding = CANVAS_SIZE * PADDING_PERCENT;
           const maxInnerSize = CANVAS_SIZE - (padding * 2);
 
           const scale = Math.min(maxInnerSize / productWidth, maxInnerSize / productHeight);
@@ -152,12 +152,28 @@ export default function ImageProcessor() {
           const x = (CANVAS_SIZE - drawWidth) / 2;
           const y = (CANVAS_SIZE - drawHeight) / 2;
 
+          // Apply Brightness & Contrast (5%)
+          ctx.filter = 'brightness(105%) contrast(105%)';
+
+          // Apply realistic drop shadow
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+          ctx.shadowBlur = 25;
+          ctx.shadowOffsetY = 15;
+          ctx.shadowOffsetX = 0;
+
           // Draw cropped subject image onto final canvas
           ctx.drawImage(
             offscreenCanvas,
             minX, minY, productWidth, productHeight,
             x, y, drawWidth, drawHeight
           );
+
+          // Reset context options
+          ctx.filter = 'none';
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.shadowOffsetX = 0;
 
           // Convert to JPG
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
