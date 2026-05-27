@@ -142,14 +142,26 @@ export default function ImageProcessor() {
     setErrorMsg('');
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     if (!resultImageUrl) return;
-    const a = document.createElement('a');
-    a.href = resultImageUrl;
-    a.download = `product-${Date.now()}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      const response = await fetch(resultImageUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `product-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (err) {
+      console.error('Failed to download image:', err);
+    }
   };
 
   return (
