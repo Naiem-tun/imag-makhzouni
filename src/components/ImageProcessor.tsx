@@ -88,6 +88,43 @@ export default function ImageProcessor() {
       const img = new Image();
       img.onload = () => {
         try {
+          // 1. Get exact bounding box of the non-transparent pixels
+          const offscreenCanvas = document.createElement('canvas');
+          offscreenCanvas.width = img.width;
+          offscreenCanvas.height = img.height;
+          const offctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+          if (!offctx) {
+            reject(new Error('Offscreen canvas context not available'));
+            return;
+          }
+          offctx.drawImage(img, 0, 0);
+          const imgData = offctx.getImageData(0, 0, img.width, img.height);
+          const data = imgData.data;
+
+          let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+          let hasPixels = false;
+
+          for (let y = 0; y < img.height; y++) {
+            for (let x = 0; x < img.width; x++) {
+              const alpha = data[(y * img.width + x) * 4 + 3];
+              if (alpha > 10) { // Non-transparent pixel
+                hasPixels = true;
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+
+          if (!hasPixels) {
+            minX = 0; minY = 0; maxX = img.width; maxY = img.height;
+          }
+
+          const productWidth = maxX - minX;
+          const productHeight = maxY - minY;
+
+          // 2. Prepare final 1080x1080 canvas
           const canvas = document.createElement('canvas');
           const CANVAS_SIZE = 1080;
           canvas.width = CANVAS_SIZE;
@@ -108,15 +145,19 @@ export default function ImageProcessor() {
           const padding = CANVAS_SIZE * PADDING_PERCENT; // 108px
           const maxInnerSize = CANVAS_SIZE - (padding * 2);
 
-          const scale = Math.min(maxInnerSize / img.width, maxInnerSize / img.height);
-          const drawWidth = img.width * scale;
-          const drawHeight = img.height * scale;
+          const scale = Math.min(maxInnerSize / productWidth, maxInnerSize / productHeight);
+          const drawWidth = productWidth * scale;
+          const drawHeight = productHeight * scale;
 
           const x = (CANVAS_SIZE - drawWidth) / 2;
           const y = (CANVAS_SIZE - drawHeight) / 2;
 
-          // Draw image
-          ctx.drawImage(img, x, y, drawWidth, drawHeight);
+          // Draw cropped subject image onto final canvas
+          ctx.drawImage(
+            offscreenCanvas,
+            minX, minY, productWidth, productHeight,
+            x, y, drawWidth, drawHeight
+          );
 
           // Convert to JPG
           const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -142,11 +183,19 @@ export default function ImageProcessor() {
     setErrorMsg('');
   };
 
-  const downloadImage = async () => {
+  const downloadImage = () => {
     if (!resultImageUrl) return;
+    
     try {
-      const response = await fetch(resultImageUrl);
-      const blob = await response.blob();
+      // تحويل Data URL إلى Blob لضمان التوافقية مع جميع الهواتف والمتصفحات
+      const byteString = atob(resultImageUrl.split(',')[1]);
+      const mimeString = resultImageUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
       const url = URL.createObjectURL(blob);
       
       const a = document.createElement('a');
